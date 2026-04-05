@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cicada 3301 — Puzzle Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@400;600;900&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #070a0f;
+  --bg2: #0c1118;
+  --bg3: #111820;
+  --surface: #141c26;
+  --surface2: #1a2436;
+  --border: #1e2d42;
+  --border2: #2a3f5a;
+  --accent: #00d4aa;
+  --accent2: #0099ff;
+  --accent3: #ff6b35;
+  --gold: #c9a227;
+  --text: #e8f0fe;
+  --text2: #8da8c4;
+  --text3: #4a6480;
+  --danger: #ff4444;
+  --green: #00ff88;
+  --mono: 'Fira Code', 'Share Tech Mono', monospace;
+  --display: 'Cinzel', serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animated background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scanlines */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Header */
+header {
+  text-align: center;
+  padding: 60px 0 40px;
+  position: relative;
+}
+
+.cicada-symbol {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+  filter: hue-rotate(0deg);
+  animation: hueshift 8s linear infinite;
+}
+@keyframes hueshift {
+  0%,100% { filter: hue-rotate(0deg) brightness(1); }
+  50% { filter: hue-rotate(30deg) brightness(1.2); }
+}
+
+.header-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .3em;
+  color: var(--accent);
+  margin-bottom: 12px;
+  display: block;
+}
+
+h1 {
+  font-family: var(--display);
+  font-size: clamp(28px, 6vw, 52px);
+  font-weight: 900;
+  letter-spacing: .06em;
+  color: var(--text);
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+
+h1 span { color: var(--accent); }
+
+.subtitle {
+  font-size: 12px;
+  color: var(--text3);
+  letter-spacing: .15em;
+  margin-top: 12px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 32px 0;
+  color: var(--text3);
+  font-size: 10px;
+  letter-spacing: .2em;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border2), transparent);
+}
+
+/* Nav tabs */
+nav {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+
+.tab {
+  flex: 1;
+  min-width: 120px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text3);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: all .2s;
+  text-align: center;
+}
+.tab:hover { color: var(--text2); background: var(--surface); }
+.tab.active {
+  background: var(--surface2);
+  color: var(--accent);
+  border: 1px solid var(--border2);
+}
+
+/* Panels */
+.panel { display: none; }
+.panel.on { display: block; animation: fadein .3s ease; }
+@keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border2), transparent);
+}
+
+.card-title {
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: .1em;
+  color: var(--accent);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-title .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+/* Labels */
+.lbl {
+  font-size: 10px;
+  letter-spacing: .15em;
+  color: var(--text3);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+/* Inputs */
+textarea, input[type=text], input[type=number], select {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color .2s;
+  margin-bottom: 10px;
+}
+textarea:focus, input:focus, select:focus { border-color: var(--accent); }
+textarea { min-height: 80px; resize: vertical; }
+select { cursor: pointer; }
+
+/* Buttons */
+.btn {
+  padding: 9px 20px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  color: var(--text2);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  cursor: pointer;
+  transition: all .2s;
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,170,.05); }
+.btn:active { transform: scale(.97); }
+.btn.primary { border-color: var(--accent); color: var(--accent); }
+.btn.primary:hover { background: rgba(0,212,170,.12); }
+
+/* Output */
+.output {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  padding: 14px;
+  font-family: var(--mono);
+  font-size: 13px;
+  min-height: 48px;
+  word-break: break-all;
+  white-space: pre-wrap;
+  color: var(--green);
+  line-height: 1.6;
+  margin-top: 4px;
+}
+.output.empty { color: var(--text3); }
+
+/* Badges */
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  letter-spacing: .08em;
+  font-weight: 500;
+  margin-right: 6px;
+  margin-bottom: 4px;
+}
+.b-blue { background: rgba(0,153,255,.15); color: var(--accent2); border: 1px solid rgba(0,153,255,.3); }
+.b-green { background: rgba(0,255,136,.1); color: var(--green); border: 1px solid rgba(0,255,136,.25); }
+.b-orange { background: rgba(255,107,53,.1); color: var(--accent3); border: 1px solid rgba(255,107,53,.25); }
+.b-gold { background: rgba(201,162,39,.1); color: var(--gold); border: 1px solid rgba(201,162,39,.25); }
+
+/* Pill row */
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.pill {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--text3);
+  background: transparent;
+  font-family: var(--mono);
+  transition: all .2s;
+  letter-spacing: .04em;
+}
+.pill:hover { border-color: var(--border2); color: var(--text2); }
+.pill.sel { border-color: var(--accent); color: var(--accent); background: rgba(0,212,170,.08); }
+
+/* Row */
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 14px; }
+
+/* Tip */
+.tip {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 8px;
+  line-height: 1.6;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+}
+
+/* Chain */
+.chain-step {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-family: var(--mono);
+  word-break: break-all;
+  color: var(--green);
+  margin-bottom: 4px;
+}
+.chain-label { font-size: 10px; letter-spacing: .1em; color: var(--text3); margin-bottom: 3px; text-transform: uppercase; }
+.chain-arrow { text-align: center; color: var(--accent); font-size: 18px; margin: 4px 0; opacity: .5; }
+
+/* Status blip */
+.blip {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  margin-right: 6px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Ref grid */
+.ref-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.ref-item:last-child { border-bottom: none; }
+
+/* Glow on focus card */
+.card:focus-within {
+  border-color: var(--border2);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+.tl-item { position:relative; margin-bottom:28px; }
+.tl-dot { position:absolute; left:-24px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--border2); border:1.5px solid var(--accent); }
+.tl-date { font-size:10px; letter-spacing:.15em; color:var(--gold); margin-bottom:3px; text-transform:uppercase; }
+.tl-title { font-size:14px; font-weight:500; color:var(--text); margin-bottom:6px; font-family:var(--display); letter-spacing:.04em; }
+.tl-body { font-size:12px; color:var(--text2); line-height:1.8; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <div style="display:flex;justify-content:center;margin-bottom:20px">
+    <svg width="110" height="110" viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 0 18px rgba(0,212,170,0.35))">
+      <circle cx="55" cy="55" r="52" stroke="#00d4aa" stroke-width="1.2" fill="none" opacity="0.5"/>
+      <circle cx="55" cy="55" r="44" stroke="#00d4aa" stroke-width="0.6" fill="none" opacity="0.3"/>
+      <circle cx="55" cy="55" r="36" stroke="#c9a227" stroke-width="0.8" fill="none" opacity="0.4"/>
+      <!-- body -->
+      <ellipse cx="55" cy="58" rx="10" ry="18" fill="#0c1118" stroke="#00d4aa" stroke-width="1"/>
+      <!-- head -->
+      <circle cx="55" cy="38" r="8" fill="#0c1118" stroke="#00d4aa" stroke-width="1"/>
+      <!-- eyes -->
+      <circle cx="51" cy="36" r="2" fill="#00d4aa" opacity="0.9"/>
+      <circle cx="59" cy="36" r="2" fill="#00d4aa" opacity="0.9"/>
+      <circle cx="51.8" cy="35.2" r="0.7" fill="#070a0f"/>
+      <circle cx="59.8" cy="35.2" r="0.7" fill="#070a0f"/>
+      <!-- antennae -->
+      <line x1="51" y1="31" x2="40" y2="18" stroke="#00d4aa" stroke-width="0.8" opacity="0.7"/>
+      <line x1="59" y1="31" x2="70" y2="18" stroke="#00d4aa" stroke-width="0.8" opacity="0.7"/>
+      <circle cx="40" cy="18" r="1.5" fill="#00d4aa" opacity="0.7"/>
+      <circle cx="70" cy="18" r="1.5" fill="#00d4aa" opacity="0.7"/>
+      <!-- wings left -->
+      <path d="M45 48 Q22 36 18 52 Q20 66 45 62" fill="rgba(0,212,170,0.07)" stroke="#00d4aa" stroke-width="0.8"/>
+      <path d="M45 55 Q16 50 14 65 Q18 76 45 70" fill="rgba(0,212,170,0.05)" stroke="#00d4aa" stroke-width="0.6" opacity="0.6"/>
+      <!-- wings right -->
+      <path d="M65 48 Q88 36 92 52 Q90 66 65 62" fill="rgba(0,212,170,0.07)" stroke="#00d4aa" stroke-width="0.8"/>
+      <path d="M65 55 Q94 50 96 65 Q92 76 65 70" fill="rgba(0,212,170,0.05)" stroke="#00d4aa" stroke-width="0.6" opacity="0.6"/>
+      <!-- body segments -->
+      <line x1="48" y1="52" x2="62" y2="52" stroke="#00d4aa" stroke-width="0.5" opacity="0.5"/>
+      <line x1="47" y1="58" x2="63" y2="58" stroke="#00d4aa" stroke-width="0.5" opacity="0.5"/>
+      <line x1="48" y1="64" x2="62" y2="64" stroke="#00d4aa" stroke-width="0.5" opacity="0.5"/>
+      <!-- legs -->
+      <line x1="46" y1="50" x2="30" y2="46" stroke="#00d4aa" stroke-width="0.7" opacity="0.6"/>
+      <line x1="46" y1="58" x2="28" y2="58" stroke="#00d4aa" stroke-width="0.7" opacity="0.6"/>
+      <line x1="46" y1="66" x2="30" y2="72" stroke="#00d4aa" stroke-width="0.7" opacity="0.6"/>
+      <line x1="64" y1="50" x2="80" y2="46" stroke="#00d4aa" stroke-width="0.7" opacity="0.6"/>
+      <line x1="64" y1="58" x2="82" y2="58" stroke="#00d4aa" stroke-width="0.7" opacity="0.6"/>
+      <line x1="64" y1="66" x2="80" y2="72" stroke="#00d4aa" stroke-width="0.7" opacity="0.6"/>
+      <!-- 3301 text at bottom of circle -->
+      <text x="55" y="100" text-anchor="middle" font-family="Cinzel,serif" font-size="9" fill="#c9a227" letter-spacing="3" opacity="0.8">3301</text>
+      <!-- tick marks -->
+      <g opacity="0.25" stroke="#00d4aa" stroke-width="0.6">
+        <line x1="55" y1="3" x2="55" y2="9"/>
+        <line x1="55" y1="101" x2="55" y2="107"/>
+        <line x1="3" y1="55" x2="9" y2="55"/>
+        <line x1="101" y1="55" x2="107" y2="55"/>
+        <line x1="18" y1="18" x2="22" y2="22"/>
+        <line x1="88" y1="18" x2="84" y2="22"/>
+        <line x1="18" y1="92" x2="22" y2="88"/>
+        <line x1="88" y1="92" x2="84" y2="88"/>
+      </g>
+    </svg>
+  </div>
+  <span class="header-tag">&#9670; classified — eyes only &#9670;</span>
+  <h1>CICADA <span>3301</span></h1>
+  <p class="subtitle">PUZZLE STUDIO &nbsp;/&nbsp; CIPHER TOOLKIT &nbsp;/&nbsp; ARG BUILDER</p>
+  <div class="divider">INITIATE SEQUENCE</div>
+</header>
+
+<nav>
+  <button class="tab active" onclick="sw('encode')">&#9670; Encoders</button>
+  <button class="tab" onclick="sw('chain')">&#9670; Cipher Chain</button>
+  <button class="tab" onclick="sw('pg')">&#9670; Primes &amp; Gematria</button>
+  <button class="tab" onclick="sw('steg')">&#9670; Steganography</button>
+  <button class="tab" onclick="sw('puzzle')">&#9670; Puzzle Builder</button>
+  <button class="tab" onclick="sw('ref')">&#9670; 3301 Reference</button>
+  <button class="tab" onclick="sw('mystery')" style="border-color:rgba(201,162,39,.4);color:#c9a227">&#9670; The Mystery</button>
+</nav>
+
+<!-- ENCODERS -->
+<div id="p-encode" class="panel on">
+  <div class="card">
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">
+      All encoding methods found in or studied by Cicada 3301 solvers. Select a method, enter your text, and encode or decode.
+    </div>
+    <div class="pills" id="enc-pills">
+      <div class="pill sel" onclick="selEnc(this,'b64')">Base64</div>
+      <div class="pill" onclick="selEnc(this,'caesar')">Caesar</div>
+      <div class="pill" onclick="selEnc(this,'rot13')">ROT13</div>
+      <div class="pill" onclick="selEnc(this,'atbash')">Atbash</div>
+      <div class="pill" onclick="selEnc(this,'hex')">Hex</div>
+      <div class="pill" onclick="selEnc(this,'binary')">Binary</div>
+      <div class="pill" onclick="selEnc(this,'morse')">Morse</div>
+      <div class="pill" onclick="selEnc(this,'vigenere')">Vigenère</div>
+      <div class="pill" onclick="selEnc(this,'otp')">One-Time Pad</div>
+    </div>
+    <div id="enc-info" style="font-size:12px;color:var(--text2);padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:5px;margin-bottom:14px;line-height:1.7"></div>
+    <div id="enc-extra"></div>
+    <div class="lbl">Input</div>
+    <textarea id="enc-in" placeholder="Enter your message..."></textarea>
+    <div>
+      <button class="btn primary" onclick="doEnc()">&#9654; Encode</button>
+      <button class="btn" onclick="doDec()">&#9668; Decode</button>
+      <button class="btn" onclick="document.getElementById('enc-in').value='';setOut('enc-out','')">Clear</button>
+      <button class="btn" onclick="copyOut('enc-out')">Copy output</button>
+    </div>
+    <div class="lbl" style="margin-top:12px">Output</div>
+    <div class="output empty" id="enc-out">awaiting input...</div>
+  </div>
+</div>
+
+<!-- CIPHER CHAIN -->
+<div id="p-chain" class="panel">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Multi-layer cipher chain</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">
+      Stack multiple encodings like Cicada did — each step's output feeds into the next. The final output is what you give to your solver.
+    </div>
+    <div class="lbl">Starting plaintext</div>
+    <textarea id="chain-in" placeholder="Your original secret message..." style="min-height:56px"></textarea>
+    <div class="lbl">Cipher layers (applied top to bottom)</div>
+    <div id="chain-steps">
+      <div class="row chain-row" style="margin-bottom:6px">
+        <select class="chain-sel" style="margin-bottom:0;flex:1">
+          <option value="b64">Base64</option>
+          <option value="rot13">ROT13</option>
+          <option value="caesar">Caesar +3</option>
+          <option value="atbash">Atbash</option>
+          <option value="hex">Hex</option>
+          <option value="binary">Binary</option>
+          <option value="morse">Morse</option>
+          <option value="rev">Reverse</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:8px">
+      <button class="btn" onclick="addChainStep()">+ Add layer</button>
+      <button class="btn primary" onclick="runChain()">&#9654; Run chain</button>
+      <button class="btn" onclick="clearChain()">Reset</button>
+    </div>
+  </div>
+  <div id="chain-out-area"></div>
+</div>
+
+<!-- PRIMES & GEMATRIA -->
+<div id="p-pg" class="panel">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Prime checker</div>
+      <div class="lbl">Number</div>
+      <input type="number" id="prime-in" placeholder="e.g. 3301">
+      <button class="btn primary" onclick="checkPrime()">Check</button>
+      <div class="output empty" id="prime-out">awaiting input...</div>
+      <p class="tip">3301 is prime. Cicada chose it as their emblematic number.</p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Prime sequence</div>
+      <div class="lbl">First N primes</div>
+      <input type="number" id="nprimes-in" placeholder="e.g. 20" value="15">
+      <button class="btn primary" onclick="genPrimes()">Generate</button>
+      <div class="output empty" id="nprimes-out">awaiting input...</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Gematria calculator</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">
+      Ordinal English gematria — A=1, B=2 ... Z=26. Used extensively in Cicada's Liber Primus and related puzzles.
+    </div>
+    <div class="lbl">Text</div>
+    <input type="text" id="gem-in" placeholder="e.g. CICADA">
+    <button class="btn primary" onclick="calcGem()">Calculate</button>
+    <div class="output empty" id="gem-out">awaiting input...</div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Number → letters</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Space-separated integers back to letters via A=1.</div>
+    <input type="text" id="n2l-in" placeholder="e.g. 3 9 3 1 4 1">
+    <button class="btn primary" onclick="numToLetters()">Convert</button>
+    <div class="output empty" id="n2l-out">awaiting input...</div>
+  </div>
+</div>
+
+<!-- STEGANOGRAPHY -->
+<div id="p-steg" class="panel">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Zero-width steganography</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">
+      Hide a secret inside visible text using invisible Unicode characters. Zero-width space = 0, zero-width non-joiner = 1. The output looks completely normal to a reader.
+    </div>
+    <div class="grid2">
+      <div>
+        <div class="lbl">Cover text (visible to everyone)</div>
+        <textarea id="steg-cover" placeholder="The innocent-looking text..." style="min-height:60px"></textarea>
+      </div>
+      <div>
+        <div class="lbl">Secret message (hidden)</div>
+        <textarea id="steg-secret" placeholder="What you're really saying..." style="min-height:60px"></textarea>
+      </div>
+    </div>
+    <button class="btn primary" onclick="stegHide()">Hide message</button>
+    <button class="btn" onclick="stegReveal()">Reveal hidden</button>
+    <div class="lbl" style="margin-top:12px">Result</div>
+    <div class="output empty" id="steg-out">awaiting input...</div>
+    <p class="tip">To reveal: paste the result text into the "cover text" field, then click "Reveal hidden".</p>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Acrostic poem generator</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.7">
+      Each line's first letter spells your secret word — a technique found in Cicada's text messages.
+    </div>
+    <div class="lbl">Secret word or phrase</div>
+    <input type="text" id="acro-word" placeholder="e.g. TRUTH">
+    <button class="btn primary" onclick="makeAcrostic()">Generate verse</button>
+    <div class="output empty" id="acro-out" style="min-height:80px">awaiting input...</div>
+  </div>
+</div>
+
+<!-- PUZZLE BUILDER -->
+<div id="p-puzzle" class="panel">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Puzzle architect</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.7">
+      Define your final answer, choose encoding layers, and generate a complete multi-step puzzle with solver hints — ready to share.
+    </div>
+    <div class="lbl">Final answer / solution (keep this secret)</div>
+    <input type="text" id="puz-answer" placeholder="e.g. THE KEY IS WISDOM">
+    <div class="lbl">Encoding layers (applied in order, click to select)</div>
+    <div class="pills" id="puz-layers">
+      <div class="pill" onclick="togPuzLayer(this,'caesar')">Caesar +13</div>
+      <div class="pill" onclick="togPuzLayer(this,'atbash')">Atbash</div>
+      <div class="pill" onclick="togPuzLayer(this,'b64')">Base64</div>
+      <div class="pill" onclick="togPuzLayer(this,'hex')">Hex</div>
+      <div class="pill" onclick="togPuzLayer(this,'rev')">Reverse</div>
+      <div class="pill" onclick="togPuzLayer(this,'rot13')">ROT13</div>
+      <div class="pill" onclick="togPuzLayer(this,'binary')">Binary</div>
+    </div>
+    <button class="btn primary" onclick="buildPuzzle()">&#9654; Build puzzle</button>
+    <button class="btn" onclick="clearPuzzle()">Clear</button>
+  </div>
+  <div id="puz-out-area"></div>
+</div>
+
+<!-- REFERENCE -->
+<div id="p-ref" class="panel">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Techniques used in Cicada 3301 (2012–2014)</div>
+    <div id="ref-list">
+      <div class="ref-item"><span class="badge b-blue">Image</span><span>Outguess steganography — data hidden inside JPEG files using the Outguess tool</span></div>
+      <div class="ref-item"><span class="badge b-green">Cipher</span><span>Vigenère cipher with prime-number-derived keys to encrypt Liber Primus sections</span></div>
+      <div class="ref-item"><span class="badge b-green">Cipher</span><span>Book cipher — specific pages, lines, and words of Liber Primus used as keys</span></div>
+      <div class="ref-item"><span class="badge b-gold">Number</span><span>Prime numbers as structural keys — 3301 appears as coordinates, phone numbers, puzzle lengths</span></div>
+      <div class="ref-item"><span class="badge b-gold">Number</span><span>Fibonacci and Lucas sequences embedded as structural guides</span></div>
+      <div class="ref-item"><span class="badge b-orange">Text</span><span>Gematria — ordinal and standard letter-to-number mapping for hidden numeric messages</span></div>
+      <div class="ref-item"><span class="badge b-orange">Text</span><span>Elder Futhark Runic alphabet substitution — the entire Liber Primus is written in runes</span></div>
+      <div class="ref-item"><span class="badge b-blue">Web</span><span>Tor (.onion) hidden services as puzzle destinations, rotating at specific times</span></div>
+      <div class="ref-item"><span class="badge b-blue">Web</span><span>Phone numbers, GPS coordinates, and physical locations worldwide used as clues</span></div>
+      <div class="ref-item"><span class="badge b-green">Audio</span><span>Spectrogram analysis — images embedded in audio files visible only via spectral view</span></div>
+      <div class="ref-item"><span class="badge b-orange">Text</span><span>Acrostic poems — first letters of lines spell hidden words or messages</span></div>
+      <div class="ref-item"><span class="badge b-blue">Crypto</span><span>PGP signatures on every message to verify Cicada's authenticity</span></div>
+      <div class="ref-item"><span class="badge b-gold">Number</span><span>Discrete logarithm puzzles — solvers had to compute modular exponents</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Recommended reading</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.8">
+      <div style="margin-bottom:6px">&#9670; <a href="https://uncovering-cicada.fandom.com/wiki/Uncovering_Cicada_Wiki" target="_blank" style="color:var(--accent);text-decoration:none">uncovering-cicada.fandom.com</a> — community wiki with full puzzle breakdowns</div>
+      <div style="margin-bottom:6px">&#9670; Liber Primus — Cicada's mysterious runic book, partially unsolved as of 2026</div>
+      <div>&#9670; Learn Outguess, steghide, and audio spectrogram tools (Sonic Visualiser) to go deeper</div>
+    </div>
+  </div>
+</div>
+
+<!-- MYSTERY -->
+<div id="p-mystery" class="panel">
+
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--gold)"></span>What is Cicada 3301?</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.9">
+      <p style="margin-bottom:12px">Cicada 3301 is one of the most elaborate and mysterious internet puzzles ever created. It began on January 4, 2012, when an anonymous post appeared on the /b/ board of 4chan. The message was simple: <span style="color:var(--accent);font-style:italic">"Hello. We are looking for highly intelligent individuals. To find them, we have devised a test."</span></p>
+      <p style="margin-bottom:12px">Nobody knew who posted it. Nobody knew what it was for. But what followed was a global, multi-layered puzzle hunt spanning cryptography, steganography, ancient literature, number theory, philosophy, and even physical locations around the world. Thousands of people tried to solve it. Very few made it through.</p>
+      <p style="margin-bottom:12px">The puzzles required solvers to decode messages hidden inside images, crack Vigenère ciphers using prime-number keys, translate runic text from a mysterious book called <em>Liber Primus</em>, find physical posters in cities across multiple countries, and navigate Tor hidden services that appeared and disappeared at precise times.</p>
+      <p>Cicada appeared three times — in 2012, 2013, and 2014. Those who completed each hunt were contacted privately. What they were told, and by whom, remains unknown to this day. The identity of Cicada 3301 has never been confirmed. <em>Liber Primus</em> — a handwritten runic book that is central to the mystery — remains only partially decoded as of 2026.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--gold)"></span>Watch: The full story explained</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px;letter-spacing:.04em">A deep-dive documentary covering the entire Cicada 3301 mystery.</div>
+    <div style="position:relative;padding-bottom:56.25%;height:0;border-radius:6px;overflow:hidden;border:1px solid var(--border)">
+      <iframe
+        src="https://www.youtube.com/embed/I2O7blSSzpI"
+        title="Cicada 3301 Documentary"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen
+        style="position:absolute;top:0;left:0;width:100%;height:100%">
+      </iframe>
+    </div>
+    <p class="tip" style="margin-top:12px">Can't play inline? <a href="https://youtu.be/I2O7blSSzpI" target="_blank" style="color:var(--accent);text-decoration:none">Watch directly on YouTube &#8599;</a></p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--gold)"></span>Timeline of events</div>
+
+    <div style="position:relative;padding-left:28px;margin-top:8px">
+      <div style="position:absolute;left:8px;top:0;bottom:0;width:1px;background:linear-gradient(180deg,var(--accent),var(--gold),var(--border));opacity:.4"></div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--accent)"></div>
+        <div class="tl-date">January 4, 2012</div>
+        <div class="tl-title">The first post</div>
+        <div class="tl-body">An anonymous image is posted to 4chan's /b/ board with the text: "Hello. We are looking for highly intelligent individuals." Hidden inside the image's metadata is the first clue — a Caesar-shifted message pointing solvers to a Reddit link.</div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-date">January 2012</div>
+        <div class="tl-title">Images within images</div>
+        <div class="tl-body">Using the Outguess steganography tool, solvers extract hidden data from JPEG images. Each decoded image contains another layer — book ciphers, prime-number keys, and Base64 strings. The trail leads to a Tor hidden service that activates at a specific date and time.</div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-date">January 9, 2012</div>
+        <div class="tl-title">Physical posters appear worldwide</div>
+        <div class="tl-body">Posters bearing a QR code and the Cicada cicada image appear simultaneously in cities including Warsaw, Paris, Seoul, Sydney, Miami, and Tucson. Solvers photograph and share them online. The QR codes lead to more encrypted messages.</div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-date">March 2012</div>
+        <div class="tl-title">Winners contacted — Hunt 1 ends</div>
+        <div class="tl-body">Those who completed the final steps of the 2012 puzzle are contacted privately via PGP-signed email. What they were told and what they were recruited for remains secret. Cicada then goes silent.</div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--gold)"></div>
+        <div class="tl-date">January 4, 2013</div>
+        <div class="tl-title">Hunt 2 begins</div>
+        <div class="tl-body">Exactly one year after the first post, Cicada returns with a new image on 4chan. The 2013 puzzle is more complex — it introduces Vigenère ciphers with prime-derived keys, deeper use of steganography, and new physical locations. Thousands attempt it; very few finish.</div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-date">April 2013</div>
+        <div class="tl-title">Liber Primus introduced</div>
+        <div class="tl-body">Cicada releases <em>Liber Primus</em> — a 58-page book written entirely in Elder Futhark runes. It is the central artifact of the entire mystery. Most of it remains undeciphered. Solvers believe it contains the core message or ideology of whoever is behind Cicada 3301.</div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--gold)"></div>
+        <div class="tl-date">January 4, 2014</div>
+        <div class="tl-title">Hunt 3 — the last confirmed round</div>
+        <div class="tl-body">The third and final confirmed Cicada puzzle launches. It is the most philosophically dense, referencing Aleister Crowley, Jungian archetypes, and deep cryptographic theory. Several more pages of Liber Primus are unlocked. No further official hunt has been confirmed since.</div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-date">2015 – 2016</div>
+        <div class="tl-title">Unconfirmed activity</div>
+        <div class="tl-body">Possible Cicada activity appears in 2015 and 2016, but none is verified via PGP signature — the method Cicada always used to authenticate messages. The community remains divided on whether these were genuine or imitations.</div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--accent3)"></div>
+        <div class="tl-date">2016 – Present</div>
+        <div class="tl-title">Liber Primus — still unsolved</div>
+        <div class="tl-body">The global community of solvers continues to work on the remaining pages of Liber Primus. Some pages have been partially decoded. Others remain completely opaque. Whoever — or whatever — Cicada 3301 was, they have not officially returned. The puzzle remains open.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer style="text-align:center;padding-top:40px;border-top:1px solid var(--border);margin-top:20px;padding-bottom:20px">
+  <div style="font-size:10px;letter-spacing:.2em;color:var(--text3);margin-bottom:10px">
+    <span class="blip"></span>3301 &nbsp;&#9670;&nbsp; THE WORK OF AN ARTIST &nbsp;&#9670;&nbsp; SEEK AND YE SHALL FIND
+  </div>
+  <div style="font-size:11px;color:var(--text3);letter-spacing:.1em">
+    Made by <span style="color:var(--accent);font-weight:500">Jayden</span>
+  </div>
+</footer>
+
+</div>
+
+<script>
+var curEnc = 'b64';
+var puzLayers = [];
+
+const encDescs = {
+  b64: 'Base64 — Cicada used this to encode binary data hidden inside image files and 4chan posts. Output ends in = or ==.',
+  caesar: 'Caesar cipher — shifts each letter by N positions. One of the simplest ciphers; often used as the outermost layer in a multi-cipher puzzle.',
+  rot13: 'ROT13 — Caesar with shift 13. Applying it twice returns the original. Cicada used this in early forum exchanges.',
+  atbash: 'Atbash — reverses the alphabet (A↔Z, B↔Y...). An ancient Hebrew cipher; appears throughout Cicada\'s Liber Primus text.',
+  hex: 'Hexadecimal — converts each character to a 2-digit base-16 code. Seen in Cicada image metadata and hidden strings.',
+  binary: 'Binary — raw 8-bit representation of each character. A=01000001. Represents data at the most fundamental machine level.',
+  morse: 'Morse code — dots and dashes. Cicada embedded audio recordings requiring Morse decoding as part of the 2012 hunt.',
+  vigenere: 'Vigenère — a keyword-based polyalphabetic cipher. Cicada used prime-derived keywords to make this far harder to brute-force.',
+  otp: 'One-time pad — XOR each character with a key character. Theoretically unbreakable if the key is truly random, secret, and only used once.'
+};
+
+function setOut(id, v) {
+  const el = document.getElementById(id);
+  el.textContent = v || 'awaiting input...';
+  el.classList.toggle('empty', !v);
+}
+
+function copyOut(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy output', 1500);
+  });
+}
+
+function selEnc(el, name) {
+  document.querySelectorAll('#enc-pills .pill').forEach(p => p.classList.remove('sel'));
+  el.classList.add('sel');
+  curEnc = name;
+  document.getElementById('enc-info').textContent = encDescs[name] || '';
+  const ex = document.getElementById('enc-extra');
+  if (name === 'caesar') {
+    ex.innerHTML = '<div class="row" style="margin-bottom:12px"><label class="lbl" style="margin:0;width:60px">Shift</label><input type="number" id="cs" value="13" min="1" max="25" style="width:80px;margin-bottom:0"></div>';
+  } else if (name === 'vigenere') {
+    ex.innerHTML = '<div class="lbl">Keyword</div><input type="text" id="vkey" placeholder="e.g. PRIMES" style="max-width:240px">';
+  } else if (name === 'otp') {
+    ex.innerHTML = '<div class="lbl">Key (same length or longer than message)</div><input type="text" id="otpkey" placeholder="e.g. RANDOMSECRETKEY">';
+  } else {
+    ex.innerHTML = '';
+  }
+}
+selEnc(document.querySelector('#enc-pills .pill'), 'b64');
+
+function rot13(s) { return s.replace(/[a-zA-Z]/g, c => { const b = c <= 'Z' ? 65 : 97; return String.fromCharCode((c.charCodeAt(0) - b + 13) % 26 + b); }); }
+function caesarFn(s, n) { return s.replace(/[a-zA-Z]/g, c => { const b = c <= 'Z' ? 65 : 97; return String.fromCharCode((c.charCodeAt(0) - b + ((n % 26) + 26)) % 26 + b); }); }
+function atbash(s) { return s.replace(/[a-zA-Z]/g, c => { const b = c <= 'Z' ? 65 : 97; return String.fromCharCode(b + 25 - (c.charCodeAt(0) - b)); }); }
+
+const MC = {A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',0:'-----',1:'.----',2:'..---',3:'...--',4:'....-',5:'.....',6:'-....',7:'--...',8:'---..',9:'----.'};
+const MCR = Object.fromEntries(Object.entries(MC).map(([k,v]) => [v,k]));
+function toMorse(s) { return s.toUpperCase().split('').map(c => c === ' ' ? '/' : (MC[c] || '?')).join(' '); }
+function fromMorse(s) { return s.split(' ').map(t => t === '/' ? ' ' : (MCR[t] || '?')).join(''); }
+
+function vigEncode(s, k) {
+  k = k.toUpperCase(); let ki = 0;
+  return s.split('').map(c => {
+    if (!/[a-zA-Z]/.test(c)) return c;
+    const b = c <= 'Z' ? 65 : 97, sh = k.charCodeAt(ki++ % k.length) - 65;
+    return String.fromCharCode((c.charCodeAt(0) - b + sh) % 26 + b);
+  }).join('');
+}
+function vigDecode(s, k) {
+  k = k.toUpperCase(); let ki = 0;
+  return s.split('').map(c => {
+    if (!/[a-zA-Z]/.test(c)) return c;
+    const b = c <= 'Z' ? 65 : 97, sh = k.charCodeAt(ki++ % k.length) - 65;
+    return String.fromCharCode((c.charCodeAt(0) - b - sh + 26) % 26 + b);
+  }).join('');
+}
+function otpFn(s, k) { return Array.from(s).map((c, i) => String.fromCharCode(c.charCodeAt(0) ^ (k.charCodeAt(i % k.length) || 0))).join(''); }
+
+function encode(type, v) {
+  if (type === 'b64') return btoa(unescape(encodeURIComponent(v)));
+  if (type === 'rot13') return rot13(v);
+  if (type === 'caesar') { const n = parseInt(document.getElementById('cs').value) || 13; return caesarFn(v, n); }
+  if (type === 'atbash') return atbash(v);
+  if (type === 'hex') return Array.from(v).map(c => c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');
+  if (type === 'binary') return Array.from(v).map(c => c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ');
+  if (type === 'morse') return toMorse(v);
+  if (type === 'vigenere') { const k = (document.getElementById('vkey') || {value:'KEY'}).value || 'KEY'; return vigEncode(v, k); }
+  if (type === 'otp') { const k = (document.getElementById('otpkey') || {value:''}).value; return otpFn(v, k); }
+  if (type === 'rev') return v.split('').reverse().join('');
+  return v;
+}
+function decode(type, v) {
+  if (type === 'b64') return decodeURIComponent(escape(atob(v.trim())));
+  if (type === 'rot13') return rot13(v);
+  if (type === 'caesar') { const n = parseInt(document.getElementById('cs').value) || 13; return caesarFn(v, -n); }
+  if (type === 'atbash') return atbash(v);
+  if (type === 'hex') return v.trim().split(/\s+/).map(h => String.fromCharCode(parseInt(h, 16))).join('');
+  if (type === 'binary') return v.trim().split(/\s+/).map(b => String.fromCharCode(parseInt(b, 2))).join('');
+  if (type === 'morse') return fromMorse(v);
+  if (type === 'vigenere') { const k = (document.getElementById('vkey') || {value:'KEY'}).value || 'KEY'; return vigDecode(v, k); }
+  if (type === 'otp') { const k = (document.getElementById('otpkey') || {value:''}).value; return otpFn(v, k); }
+  if (type === 'rev') return v.split('').reverse().join('');
+  return v;
+}
+
+function doEnc() {
+  const v = document.getElementById('enc-in').value;
+  try { setOut('enc-out', encode(curEnc, v)); } catch(e) { setOut('enc-out', 'Error: ' + e.message); }
+}
+function doDec() {
+  const v = document.getElementById('enc-in').value;
+  try { setOut('enc-out', decode(curEnc, v)); } catch(e) { setOut('enc-out', 'Error: ' + e.message); }
+}
+
+function sw(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.getElementById('p-' + name).classList.add('on');
+  const tabs = ['encode','chain','pg','steg','puzzle','ref','mystery'];
+  document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active', tabs[i] === name));
+}
+
+function chainEnc(type, v) {
+  if (type === 'b64') return btoa(unescape(encodeURIComponent(v)));
+  if (type === 'rot13') return rot13(v);
+  if (type === 'caesar') return caesarFn(v, 3);
+  if (type === 'atbash') return atbash(v);
+  if (type === 'hex') return Array.from(v).map(c => c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');
+  if (type === 'binary') return Array.from(v).map(c => c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ');
+  if (type === 'morse') return toMorse(v);
+  if (type === 'rev') return v.split('').reverse().join('');
+  return v;
+}
+
+function addChainStep() {
+  const div = document.createElement('div');
+  div.className = 'row chain-row';
+  div.style.marginBottom = '6px';
+  div.innerHTML = '<select class="chain-sel" style="margin-bottom:0;flex:1"><option value="b64">Base64</option><option value="rot13">ROT13</option><option value="caesar">Caesar +3</option><option value="atbash">Atbash</option><option value="hex">Hex</option><option value="binary">Binary</option><option value="morse">Morse</option><option value="rev">Reverse</option></select><button class="btn" onclick="this.parentNode.remove()" style="margin:0;padding:6px 12px">Remove</button>';
+  document.getElementById('chain-steps').appendChild(div);
+}
+
+function runChain() {
+  const start = document.getElementById('chain-in').value;
+  const sels = document.querySelectorAll('.chain-sel');
+  let cur = start, steps = [{ label: 'Original plaintext', val: start }];
+  sels.forEach(s => {
+    cur = chainEnc(s.value, cur);
+    steps.push({ label: 'After ' + s.options[s.selectedIndex].text, val: cur });
+  });
+  const area = document.getElementById('chain-out-area');
+  area.innerHTML = '<div class="card">' + steps.map((s, i) => `
+    <div class="chain-label">${i === 0 ? 'Start' : 'Step ' + i}: ${s.label}</div>
+    <div class="chain-step">${s.val}</div>
+    ${i < steps.length - 1 ? '<div class="chain-arrow">&#8595;</div>' : ''}
+  `).join('') + '</div>';
+}
+
+function clearChain() {
+  document.getElementById('chain-in').value = '';
+  document.getElementById('chain-out-area').innerHTML = '';
+  document.getElementById('chain-steps').innerHTML = '<div class="row chain-row" style="margin-bottom:6px"><select class="chain-sel" style="margin-bottom:0;flex:1"><option value="b64">Base64</option><option value="rot13">ROT13</option><option value="caesar">Caesar +3</option><option value="atbash">Atbash</option><option value="hex">Hex</option><option value="binary">Binary</option><option value="morse">Morse</option><option value="rev">Reverse</option></select></div>';
+}
+
+function isPrime(n) { if (n < 2) return false; if (n < 4) return true; if (n % 2 === 0 || n % 3 === 0) return false; for (let i = 5; i * i <= n; i += 6) if (n % i === 0 || n % (i+2) === 0) return false; return true; }
+
+function checkPrime() {
+  const n = parseInt(document.getElementById('prime-in').value);
+  if (isNaN(n)) { setOut('prime-out', 'Enter a number.'); return; }
+  const result = n + ' is ' + (isPrime(n) ? 'PRIME ✓' : 'not prime') + (n === 3301 ? ' — the Cicada number!' : '');
+  setOut('prime-out', result);
+}
+
+function genPrimes() {
+  const n = Math.min(parseInt(document.getElementById('nprimes-in').value) || 15, 300);
+  let primes = [], i = 2;
+  while (primes.length < n) { if (isPrime(i)) primes.push(i); i++; }
+  setOut('nprimes-out', primes.join(', '));
+}
+
+function calcGem() {
+  const v = document.getElementById('gem-in').value.toUpperCase();
+  const vals = v.split('').filter(c => /[A-Z]/.test(c)).map(c => c.charCodeAt(0) - 64);
+  if (!vals.length) { setOut('gem-out', 'Enter letters.'); return; }
+  const sum = vals.reduce((a, b) => a + b, 0);
+  setOut('gem-out', v.replace(/[^A-Z]/g,'') + ' = ' + vals.join(' + ') + ' = ' + sum);
+}
+
+function numToLetters() {
+  const v = document.getElementById('n2l-in').value.trim().split(/\s+/);
+  const result = v.map(n => { const x = parseInt(n); return (x >= 1 && x <= 26) ? String.fromCharCode(x + 64) : '?'; }).join('');
+  setOut('n2l-out', result);
+}
+
+const ZWS = '\u200B', ZWNJ = '\u200C';
+function stegHide() {
+  const cover = document.getElementById('steg-cover').value;
+  const secret = document.getElementById('steg-secret').value;
+  const bits = Array.from(secret).map(c => c.charCodeAt(0).toString(2).padStart(8,'0')).join('').split('').map(b => b === '0' ? ZWS : ZWNJ).join('');
+  document.getElementById('steg-out').textContent = cover + bits;
+  document.getElementById('steg-out').classList.remove('empty');
+}
+function stegReveal() {
+  const text = document.getElementById('steg-cover').value;
+  const bits = Array.from(text).filter(c => c === ZWS || c === ZWNJ).map(c => c === ZWS ? '0' : '1').join('');
+  if (!bits) { setOut('steg-out', 'No hidden message found in this text.'); return; }
+  const bytes = bits.match(/.{8}/g) || [];
+  const msg = bytes.map(b => String.fromCharCode(parseInt(b, 2))).join('');
+  setOut('steg-out', 'Hidden message: "' + msg + '"');
+}
+
+const acroLines = {
+  A:["All truths hide in plain sight.","A single candle lights the dark.","Answers come to those who seek."],
+  B:["Beyond the veil lies wisdom.","Before the storm, silence.","Beneath each lie, a deeper truth."],
+  C:["Curiosity is the only key.","Countless paths lead to one door.","Codes speak louder than words."],
+  D:["Darkness reveals what light conceals.","Doubters never find the gate.","Deep in the signal, silence waits."],
+  E:["Every ending is a door.","Entropy is not chaos but pattern.","Errors become maps if read right."],
+  F:["Few will find the hidden path.","Follow the prime, not the noise.","Fractals repeat at every scale."],
+  G:["Gaze into the pattern long enough.","Gates open only from within.","Grains of truth form monuments."],
+  H:["Hidden things seek those who seek.","Harmony underlies all apparent chaos.","Half a key opens no door."],
+  I:["Illuminate the space between letters.","In silence, the signal speaks.","Infinity has a finite name."],
+  J:["Join the dots no one draws.","Journey inward before outward.","Just beneath the surface, it waits."],
+  K:["Knowledge costs more than gold.","Keys are never where you expect.","Keep the pattern, discard the noise."],
+  L:["Light bends before it breaks.","Layers hide what layers reveal.","Listen for the note between notes."],
+  M:["Maps are written in metaphors.","Mirrors show what eyes cannot.","Meaning lives between the words."],
+  N:["Nothing is random. Look again.","Numbers carry weight that letters don't.","Noise and signal share the same channel."],
+  O:["Observe before you act.","Only the patient find the key.","Order emerges from apparent chaos."],
+  P:["Patterns repeat across all scales.","Primes are the bones of mathematics.","Persistence is the only tool required."],
+  Q:["Questions outlast their answers.","Quietly, the message repeats itself.","Quest before reward."],
+  R:["Read what is not written.","Repetition is the mother of pattern.","Riddles are doors without handles."],
+  S:["Silence is the loudest cipher.","Seek the prime in every sequence.","Symbols carry memory beyond their makers."],
+  T:["Truth hides in the visible.","The answer was always there.","Time reveals what haste conceals."],
+  U:["Understand the question before the answer.","Underneath every symbol, another.","Unity of purpose finds the gate."],
+  V:["Vigilance is the seeker's first virtue.","Void is not the absence of signal.","Verify nothing. Question everything."],
+  W:["Wisdom is pattern recognition over time.","Wait for the signal to repeat.","What is hidden was once in plain sight."],
+  X:["X marks nothing. Look elsewhere.","Xenolith: foreign stone, foreign truth.","Examine the spaces between symbols."],
+  Y:["You were always the key.","Yesterday's cipher is tomorrow's history.","Your eyes see. Your mind must follow."],
+  Z:["Zero is not the beginning.","Zealots find gates. Seekers find paths.","Zones of silence contain the signal."]
+};
+
+function makeAcrostic() {
+  const word = document.getElementById('acro-word').value.toUpperCase().replace(/[^A-Z]/g,'');
+  if (!word) { setOut('acro-out', 'Enter a word first.'); return; }
+  const lines = Array.from(word).map(c => {
+    const opts = acroLines[c] || ['... (no line for ' + c + ')'];
+    return opts[Math.floor(Math.random() * opts.length)];
+  });
+  setOut('acro-out', lines.join('\n'));
+}
+
+function togPuzLayer(el, name) {
+  el.classList.toggle('sel');
+  if (el.classList.contains('sel')) { puzLayers.push(name); }
+  else { puzLayers = puzLayers.filter(l => l !== name); }
+}
+
+function puzEncode(type, v) {
+  if (type === 'caesar') return caesarFn(v, 13);
+  if (type === 'atbash') return atbash(v);
+  if (type === 'b64') return btoa(unescape(encodeURIComponent(v)));
+  if (type === 'hex') return Array.from(v).map(c => c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');
+  if (type === 'rev') return v.split('').reverse().join('');
+  if (type === 'rot13') return rot13(v);
+  if (type === 'binary') return Array.from(v).map(c => c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ');
+  return v;
+}
+
+function buildPuzzle() {
+  const answer = document.getElementById('puz-answer').value;
+  if (!answer) { alert('Enter a solution first.'); return; }
+  if (!puzLayers.length) { alert('Select at least one encoding layer.'); return; }
+  let cur = answer;
+  const steps = [{ layer: 'Plaintext answer', val: answer, hint: 'This is the final solution your solver must reach.' }];
+  puzLayers.forEach(l => {
+    cur = puzEncode(l, cur);
+    const hints = { caesar: 'Decrypt using Caesar shift 13.', atbash: 'Apply Atbash (reverse alphabet).', b64: 'Decode from Base64.', hex: 'Convert hex byte pairs to ASCII.', rev: 'Reverse the entire string.', rot13: 'Apply ROT13.', binary: 'Convert 8-bit groups to ASCII characters.' };
+    steps.push({ layer: l.toUpperCase(), val: cur, hint: hints[l] || 'Decode this layer.' });
+  });
+  steps.reverse();
+  const area = document.getElementById('puz-out-area');
+  area.innerHTML = '<div class="card"><div class="card-title"><span class="dot"></span>Your puzzle — ' + puzLayers.length + ' layer' + (puzLayers.length > 1 ? 's' : '') + '</div>' +
+    steps.map((s, i) => `
+      <div class="chain-label">Step ${i + 1}${i === 0 ? ' — Give this to your solver' : i === steps.length - 1 ? ' — Final answer (keep secret)' : ' — Decode to reveal next step'}: ${s.layer}</div>
+      <div class="chain-step">${s.val}</div>
+      <div style="font-size:11px;color:var(--text3);margin:3px 0 12px;padding-left:8px;border-left:2px solid var(--border)">${s.hint}</div>
+      ${i < steps.length - 1 ? '<div class="chain-arrow">&#8595;</div>' : ''}
+    `).join('') + '</div>';
+}
+
+function clearPuzzle() {
+  document.getElementById('puz-answer').value = '';
+  document.getElementById('puz-out-area').innerHTML = '';
+  puzLayers = [];
+  document.querySelectorAll('#puz-layers .pill').forEach(p => p.classList.remove('sel'));
+}
+</script>
+</body>
+</html>
